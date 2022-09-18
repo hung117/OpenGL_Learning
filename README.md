@@ -34,3 +34,10 @@ is a cross-platform C/C++ library that helps in querying and loading OpenGL exte
 Because OpenGL is only really a standard/specification it is up to the driver manufacturer to implement the specification to a driver that the specific graphics card supports. Since there are many different versions of OpenGL drivers, the location of most of its functions is not known at compile-time and needs to be queried at run-time.<br/>
 
 It would be complicated doing it myself, thus using a pre-build header doing just that is easier<br/> Hence Glad comes in.<br/>
+
+# MISC
+
+## Decimal RGB to float
+
+decimal / 255<br/>
+example: rgb(0,102,102,255)= rgb(0.0f,0.4f,0.4f,1.0f)
