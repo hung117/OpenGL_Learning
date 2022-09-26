@@ -1,4 +1,6 @@
-# Create Window & draw triangle
+# Lesson 1
+
+## Create Window & draw triangle
 
 The process transforming all 3D coordinates to 2D pixels that fit on your screen called <strong>graphics pipeline </strong><br/>
 <br/>

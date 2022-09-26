@@ -18,12 +18,13 @@
 
 /* -- INCLUDE FILES ------------------------------------------------------ */
 #include <iostream>
+#include <cmath>
+#include <fstream>
 #include <gl/gl.h>
 #include <gl/glu.h>
 #include <gl/glut.h>
 using namespace std;
-
-void myKeyboard(unsigned char theKey, int x = NULL, int y = NULL);
+void myKeyboard(unsigned char theKey, int x, int y);
 /* -- DATA STRUCTURES ---------------------------------------------------- */
 // Our point class.
 class GLintPoint
@@ -35,7 +36,10 @@ public:
 };
 
 /* -- GLOBAL VARIABLES --------------------------------------------------- */
-
+double cur_Vp_L = 0;
+double cur_Vp_R = 1024;
+double cur_Vp_B = 0;
+double cur_Vp_T = 780;
 /* -- LOCAL VARIABLES ---------------------------------------------------- */
 
 /* ----------------------------------------------------------------------- */
@@ -66,12 +70,14 @@ void drawDot(GLint x, GLint y)
 
 void myInit(void)
 {
-    // glClearColor(1.0, 1.0, 1.0, 0.0);
     glClearColor(0.0f, 0.4f, 0.4f, 1.0f);
     glPointSize(5.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluOrtho2D(0.0, 640.0, 0.0, 480.0);
+    // gluOrtho2D(0.0, 640.0, 0.0, 480.0);
+
+    gluOrtho2D(0.0, 1024.0, 0.0, 768.0);
+    glViewport(0, 640, 0, 480);
 }
 
 /* ----------------------------------------------------------------------- */
@@ -84,75 +90,137 @@ void myInit(void)
  *
  * Returns     : void
  */
-bool btriangle = true;
-bool bPolygon = false;
-GLintPoint peak(170, 200);
-int height = 100;
-int width = 100;
-void myDisplay()
+//--------------- setWindow ---------------------
+void setWindow(float left, float right, float bottom, float top)
 {
-    cout << btriangle << endl;
-    glClear(GL_COLOR_BUFFER_BIT);
-    if (btriangle)
-        glBegin(GL_TRIANGLES);
-    else if (bPolygon)
-        // glBegin(GL_POLYGON_SMOOTH);
-        glBegin(GL_LINE_LOOP);
-    else
-        glBegin(GL_POINTS);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(left, right, bottom, top);
+}
+//---------------- setViewport ------------------
+void setViewport(float left, float right, float bottom, float top)
+{
+    glViewport(left, bottom, right - left, top - bottom);
+}
+//---------------- Display utility functions  ------------------
 
-    glColor3f(1.0f, 0.2f, 0.0f);
+void drawFuncGraph()
+{
+    setWindow(-50.0, 250.0, -50.0, 50.0);
 
-    if (!bPolygon)
-    {
-        glVertex2i(80, 120);
-        glVertex2i(160, 120);
-        glVertex2i(120, 180);
-    }
-    else
-    {
-        glVertex2i(peak.x, peak.y); // draw shell of house
-        glVertex2i(peak.x + width / 2, peak.y - 3 * height / 8);
-        glVertex2i(peak.x + width / 2, peak.y - height);
-        glVertex2i(peak.x - width / 2, peak.y - height);
-        glVertex2i(peak.x - width / 2, peak.y - 3 * height / 8);
-    }
+    // glBegin(GL_LINE_STRIP);
+    // glColor3f(0.6, 0.6, 0.4);
+    // for (GLfloat x = -4.0; x < 4.0; x += 0.1) // draw the plot
+    //     glVertex2f(x, sin(3.14159 * x) / (3.14159 * x));
+    // glEnd();
+    int multiplier = 6;
+    setViewport(cur_Vp_L + 150, cur_Vp_R + 150, cur_Vp_B, cur_Vp_T);
+    glBegin(GL_LINE_STRIP);
+    glColor3f(0.5, 0.1, 1);
+    for (GLfloat x = -14.0; x < 200.0; x += 5)
+        glVertex2f(x, x * x * x + 2 * x * x + 3);
+    glEnd();
+
+    glBegin(GL_LINE_STRIP);
+    setViewport(cur_Vp_L - 100 * multiplier, cur_Vp_R + 100 * multiplier, cur_Vp_B - 100 * multiplier, cur_Vp_T + 100 * multiplier);
+    glColor3f(0.6, 0.6, 0.4);
+    for (GLfloat x = -14.0; x < 200.0; x += 5)
+        glVertex2f(x, 2 * sin(x) + 0.5 * cos(x));
     glEnd();
     glFlush();
+}
+void drawPolyLine(const char *filePath)
+{
+
+    fstream instream;
+    instream.open(filePath);
+    if (instream.fail())
+    {
+        cout << "Error: Could not open file " << filePath << endl;
+        return;
+    }
+
+    int numpolys = 0;
+    int numLines = 0;
+    double x, y;
+    instream >> numpolys;
+
+    setWindow(0.0, 780.0, 0.0, 600.0);
+    setViewport(0, 640, 0, 480);
+    glColor3f(0.2, 0.1, 1);
+    for (int j = 0; j < numpolys; j++) // read each polyline
+    {
+        instream >> numLines;
+        glBegin(GL_LINE_STRIP); // draw the next polyline
+        for (int i = 0; i < numLines; i++)
+        {
+            instream >> x >> y; // read the next x, y pair
+            glVertex2f(x, y);
+        }
+        glEnd(); // end
+    }
+    glFlush();
+    instream.close();
+}
+void myDisplay()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    const char *filePath = "../Res/dinosaur.dat";
+    drawPolyLine(filePath);
+    drawFuncGraph();
 }
 void myKeyboard(unsigned char theKey, int x, int y)
 {
     switch (theKey)
     {
-
+    case 27:
+        cout << "Exit program" << endl;
+        exit(-1); // terminate the program
+        break;
+    case 'w':
+        cout << "up" << endl;
+        cur_Vp_T += 60;
+        cur_Vp_B += 60;
+        break;
+    case 's':
+        cout << "down" << endl;
+        cur_Vp_T -= 60;
+        cur_Vp_B -= 60;
+        break;
     case 'a':
-        bPolygon = !bPolygon;
-        btriangle = !bPolygon;
+        // arrow left
+        cout << "left" << endl;
+        cur_Vp_R -= 60;
+        cur_Vp_L -= 60;
         break;
     case 'd':
-        bPolygon = false;
-        btriangle = false;
+        cout << "right" << endl;
+        cur_Vp_R += 60;
+        cur_Vp_L += 60;
         break;
-    case 'e':
-        exit(-1); // terminate the program
-        // cout << "keyboard pressed" << endl;
-
+    case 'z':
+        cout << "zoom in" << endl;
+        cur_Vp_R += 40;
+        cur_Vp_L -= 40;
+        cur_Vp_T += 40;
+        cur_Vp_B -= 40;
+        break;
+    case 'x':
+        cout << "zoom out" << endl;
+        cout << cur_Vp_R << " " << cur_Vp_T << " " << endl;
+        if (cur_Vp_R >= 530 && cur_Vp_T >= 300)
+        {
+            cur_Vp_R -= 40;
+            cur_Vp_L += 40;
+            cur_Vp_T -= 40;
+            cur_Vp_B += 40;
+        }
+        break;
     default:
         break; // do nothing
     }
     glutPostRedisplay();
 }
-/* ----------------------------------------------------------------------- */
-/* Function    : int main( int argc, char** argv )
- *
- * Description : This is the main function. It sets up the rendering
- *               context, and then reacts to user events.
- *
- * Parameters  : int argc     : Number of command-line arguments.
- *               char *argv[] : Array of command-line arguments.
- *
- * Returns     : int : Return code to pass to the shell.
- */
 
 int main(int argc, char *argv[])
 {
@@ -163,7 +231,7 @@ int main(int argc, char *argv[])
     // Set the window size in screen pixels.
     glutInitWindowSize(640, 480);
     // Set the window position in screen pixels.
-    glutInitWindowPosition(100, 150);
+    glutInitWindowPosition(100, 60);
     // Create the window.
     glutCreateWindow("Lab");
     // Set the callback funcion to call when we need to draw something.
