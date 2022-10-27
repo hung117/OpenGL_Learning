@@ -1,20 +1,3 @@
-/* Module      : MainFile.cpp
- * Author      :
- * Email       :
- * Course      : Computer Graphics
- *
- * Description :
- *
- *
- * Date        :
- *
- * History:
- * Revision      Date          Changed By
- * --------      ----------    ----------
- * 01.00         ?????          ???
- * First release.
- *
- */
 
 /* -- INCLUDE FILES ------------------------------------------------------ */
 #include <iostream>
@@ -77,12 +60,23 @@ GLintPoint B[] = {
     GLintPoint(40.0, 200.0),
     GLintPoint(600.0, 200.0),
 };
+static const float pi = 3.1415926535897932384626433832795029f;
+
 float t = 0.0f; // t stands for time. I supposed
 float deltaT = 0.001f;
 
 bool bRunning = true;
 int i_NumFrame = 200;
 int i_frame = 0;
+
+double dx = 1;
+double dy = 1;
+double d_moveSpeed = 2.2;
+double sx = 1;
+double sy = 1;
+double scaleRate = 1.2;
+float f_angle = 0;
+int iRotateSpeed = 10;
 //--------------- setWindow ---------------------
 void setWindow(float left, float right, float bottom, float top)
 {
@@ -134,7 +128,7 @@ void Animation_Naive() // without double Buffer
             deltaT = -0.005;
         }
 
-    cout << "t: " << t << ", deltaT: " << deltaT << endl;
+    // cout << "t: " << t << ", deltaT: " << deltaT << endl;
     for (int i = 0; i < 8; i++)
     {
         // cout << "t: " << t << ", deltaT: " << deltaT << endl;
@@ -144,9 +138,6 @@ void Animation_Naive() // without double Buffer
     }
     glEnd();
     glFlush();
-}
-void Animation_Buffer()
-{
 }
 void drawFuncGraph()
 {
@@ -166,6 +157,21 @@ void drawFuncGraph()
         glVertex2f(x, 2 * sin(x) + 0.5 * cos(x));
     glEnd();
     glFlush();
+}
+void Chap5()
+{
+    drawHouse();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity(); // load CT to ident matrix
+
+    // translate
+
+    glTranslated(dx, dy, 1.0); // set CT to CT*translation;
+    // rotate
+    glRotated(f_angle, 0.0, 0.0, 1.0); // set CT to CT * (2D rotation)
+    // glRotated(f_angle, 10.0, 10.0, 1.0); // set CT to CT * (2D rotation)
+    // scale
+    glScaled(sx, sy, 1.0);
 }
 void drawPolyLine(const char *filePath)
 {
@@ -200,33 +206,72 @@ void drawPolyLine(const char *filePath)
     glFlush();
     instream.close();
 }
+// Complicated Curve - 5th Gen Koch Snowflake, cardioid, rose & spiral parametric curves
+void drawCardioid()
+{
+    glBegin(GL_LINE_STRIP);
+    static const float r = 50.0f;
+    for (float angle = 0.0f; angle < (pi * 2.0f); angle += 0.05f)
+    {
+        // f(phi) = 2r(1-cos(phi)) // phi is the angle.
+        float x = 2.0f * r * cos(angle) * (1.0f - cos(angle));
+        float y = 2.0f * r * sin(angle) * (1.0f - cos(angle));
+        // cout << "x: " << x << "y: " << y << endl;
+        glVertex2f(x + 500, y + 400);
+    }
+    glEnd();
+}
+void drawRose()
+{
+    glColor3f(1, 0.0f, 0);
+    int k = 4;
+    float a = 50; // amplitude
+    glBegin(GL_LINE_STRIP);
+    float r = 60.0f;
+    for (float angle = 0.0f; angle < (pi * 2.0f * k); angle += 0.05f)
+    {
+        r -= 5.0f;
+        float x = a * cos(k * angle) * cos(angle);
+        float y = a * cos(k * angle) * sin(angle);
+        glVertex2f(x + 450, y + 100);
+    }
+    glEnd();
+    glColor3f(1, 1.0f, 1);
+}
+void draw_SpiralParametricCurvers()
+{
+    int k = 1;
+    glColor3f(0, 0.0f, 0);
+    glBegin(GL_LINE_STRIP);
+    float r = 60.0f;
+    for (float angle = 0.0f; angle < (pi * 2.0f * k); angle += 0.05f)
+    {
+        r -= 5.0f;
+        float x = r * cos(angle);
+        float y = r * sin(angle);
+        glVertex2f(x + 700, y + 200);
+    }
+    glEnd();
+    glColor3f(1, 1.0f, 1);
 
+    // glFlush();
+}
+void Chap3()
+{
+    drawCardioid();
+    drawRose();
+    draw_SpiralParametricCurvers();
+}
+void Chap4()
+{
+    Animation_Naive();
+    drawHouse();
+    drawCar();
+}
 void myDisplay()
 {
-
-    // for (int frame = 0; frame < i_NumFrame; ++frame)
-    // {
-    //     t += deltaT;
-    //     glClear(GL_COLOR_BUFFER_BIT); // clear Screen to draw new shape, hence creating illusion of animation.
-    //     // drawHouse();
-    //     // drawCar();
-    //     Animation_Naive();
-    // }
-    // while (bRunning)
-    // {
-    //     if (i_frame < i_NumFrame)
-    //     {
-    //         t += deltaT;
-    //         glClear(GL_COLOR_BUFFER_BIT); // clear Screen to draw new shape, hence creating illusion of animation.
-    //         // drawHouse();
-    //         // drawCar();
-    //         Animation_Naive();
-    //         i_frame++;
-    //     }
-    // }
     glClear(GL_COLOR_BUFFER_BIT); // clear Screen to draw new shape, hence creating illusion of animation.
-    // drawHouse();drawCar();
-    Animation_Naive();
+    Chap5();
     glutSwapBuffers();
     t += deltaT;
     glutPostRedisplay(); // tell glut that it's window's need to be redrawn
@@ -244,22 +289,29 @@ void myKeyboard(unsigned char theKey, int x, int y)
         cout << "up" << endl;
         cur_Vp_T += 60;
         cur_Vp_B += 60;
+        dy += d_moveSpeed;
+
         break;
     case 's':
         cout << "down" << endl;
         cur_Vp_T -= 60;
         cur_Vp_B -= 60;
+        dy -= d_moveSpeed;
+
         break;
     case 'a':
         // arrow left
         cout << "left" << endl;
         cur_Vp_R -= 60;
         cur_Vp_L -= 60;
+        dx -= d_moveSpeed;
         break;
     case 'd':
         cout << "right" << endl;
         cur_Vp_R += 60;
         cur_Vp_L += 60;
+        dx += d_moveSpeed;
+
         break;
     case 'z':
         cout << "zoom in" << endl;
@@ -267,6 +319,8 @@ void myKeyboard(unsigned char theKey, int x, int y)
         cur_Vp_L -= 40;
         cur_Vp_T += 40;
         cur_Vp_B -= 40;
+        sx *= scaleRate;
+        sy *= scaleRate;
         break;
     case 'x':
         cout << "zoom out" << endl;
@@ -278,6 +332,14 @@ void myKeyboard(unsigned char theKey, int x, int y)
             cur_Vp_T -= 40;
             cur_Vp_B += 40;
         }
+        sx /= scaleRate;
+        sy /= scaleRate;
+        break;
+    case 'r':
+        f_angle += iRotateSpeed;
+        break;
+    case 't':
+        f_angle -= iRotateSpeed;
         break;
     default:
         break; // do nothing
